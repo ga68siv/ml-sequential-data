@@ -45,7 +45,18 @@ def train_model(model: nn.Module, dataset: Dataset, batch_size: int, loss_functi
         for x,y in tqdm(iter(train_loader), total=num_train_batches):
             ##########################################################
             # YOUR CODE HERE
-            ...
+            loss, logits = loss_function(x,y,model)            
+            losses.append(loss.item())
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            total = y.size(0)
+            _, predicted = torch.max(logits.data,1)
+            correct = (predicted == y).sum().item()
+            accuracies.append(correct / total)
+            
             ##########################################################
     return losses, accuracies
 
