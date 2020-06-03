@@ -92,7 +92,11 @@ def predict_model(model: nn.Module, dataset: Dataset, batch_size: int, attack_fu
     for x, y in tqdm(iter(test_loader), total=num_batches):
         ##########################################################
         # YOUR CODE HERE
-        ...
+        
+        logits = model(x).cpu()
+        _, predicted = torch.max(logits.data,1)
+        predictions.append(predicted)
+        targets.append(y)
         ##########################################################
     predictions = torch.cat(predictions)
     targets = torch.cat(targets)
