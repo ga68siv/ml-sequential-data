@@ -93,10 +93,26 @@ def predict_model(model: nn.Module, dataset: Dataset, batch_size: int, attack_fu
         ##########################################################
         # YOUR CODE HERE
         
-        logits = model(x).cpu()
-        _, predicted = torch.max(logits.data,1)
-        predictions.append(predicted)
-        targets.append(y)
+        if attack_function == None:
+            logits = model(x).cpu()
+            _, predicted = torch.max(logits.data,1)
+            predictions.append(predicted)
+            targets.append(y)
+        else:
+            epsilon = attack_args["epsilon"]
+            norm = attack_args["norm"]
+            
+            x.requires_grad = True
+            logits = model(x).cpu()
+            
+            x_pert = attack_function(logits, x, y, epsilon, norm)
+            logits_pert = model(x_pert)
+            _, predicted_pert = torch.max(logits_pert,1)
+
+            
+            predictions.append(predicted_pert)
+            targets.append(y)
+
         ##########################################################
     predictions = torch.cat(predictions)
     targets = torch.cat(targets)
