@@ -45,7 +45,7 @@ def train_model(model: nn.Module, dataset: Dataset, batch_size: int, loss_functi
         for x,y in tqdm(iter(train_loader), total=num_train_batches):
             ##########################################################
             # YOUR CODE HERE
-            loss, logits = loss_function(x,y,model)            
+            loss, logits = loss_function(x,y,model,**loss_args)            
             losses.append(loss.item())
             
             optimizer.zero_grad()
