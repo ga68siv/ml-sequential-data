@@ -119,7 +119,17 @@ class SmoothClassifier(nn.Module):
 
         ##########################################################
         # YOUR CODE HERE
-        ...
+        # draw samples of f(x+ epsilon)
+        counts_selection = self._sample_noise_predictions(inputs, n0, batch_size)
+        # use these samples to take a guess at the top class
+        top_class = counts_selection.argmax().item()
+        # draw more samples of f(x + epsilon)
+        counts_estimation = self._sample_noise_predictions(inputs, num_samples, batch_size)
+        # use these samples to estimate a lower bound on pA
+        nA = counts_estimation[top_class].item()
+        p_A_lower_bound = self.lower_confidence_bound(nA, num_samples, alpha)
+        
+           
         ##########################################################
 
         if p_A_lower_bound < 0.5:
@@ -127,7 +137,7 @@ class SmoothClassifier(nn.Module):
         else:
             ##########################################################
             # YOUR CODE HERE
-            ...
+            radius = self.sigma * norm.ppf(p_A_lower_bound)
             ##########################################################
             return top_class, radius
 
@@ -158,7 +168,13 @@ class SmoothClassifier(nn.Module):
         class_counts = self._sample_noise_predictions(inputs, num_samples, batch_size).cpu()
         ##########################################################
         # YOUR CODE HERE
-        ...
+        top2 = class_counts.argsort()[::-1][:2]
+        count1 = class_counts[top2[0]]
+        count2 = class_counts[top2[1]]
+        if binom_test(count1, count1 + count2, p=0.5) > alpha:
+            return SmoothClassifier.ABSTAIN
+        else:
+            return top2[0]
         ##########################################################
 
     def _sample_noise_predictions(self, inputs: torch.tensor, num_samples: int, batch_size: int) -> torch.Tensor:
@@ -190,7 +206,13 @@ class SmoothClassifier(nn.Module):
                 this_batch_size = min(num_remaining, batch_size)
                 ##########################################################
                 # YOUR CODE HERE
-                ...
+             
+                num_samples -= this_batch_size        
+                batch = inputs.repeat((this_batch_size, 1, 1, 1))
+                noise = torch.randn_like(batch, device='cuda') * self.sigma
+                predictions = self.base_classifier(batch + noise).argmax(1)
+                class_counts += self._count_arr(predictions.cpu().numpy(), self.num_classes)
+        
                 ##########################################################
         return class_counts
 
