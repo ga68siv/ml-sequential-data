@@ -127,7 +127,7 @@ class SmoothClassifier(nn.Module):
         counts_estimation = self._sample_noise_predictions(inputs, num_samples, batch_size)
         # use these samples to estimate a lower bound on pA
         nA = counts_estimation[top_class].item()
-        p_A_lower_bound = self.lower_confidence_bound(nA, num_samples, alpha)
+        p_A_lower_bound = lower_confidence_bound(nA, num_samples, alpha)
         
            
         ##########################################################
@@ -168,6 +168,7 @@ class SmoothClassifier(nn.Module):
         class_counts = self._sample_noise_predictions(inputs, num_samples, batch_size).cpu()
         ##########################################################
         # YOUR CODE HERE
+        
         top2 = class_counts.argsort()[::-1][:2]
         count1 = class_counts[top2[0]]
         count2 = class_counts[top2[1]]
@@ -206,13 +207,17 @@ class SmoothClassifier(nn.Module):
                 this_batch_size = min(num_remaining, batch_size)
                 ##########################################################
                 # YOUR CODE HERE
-             
+                
                 num_samples -= this_batch_size        
                 batch = inputs.repeat((this_batch_size, 1, 1, 1))
-                noise = torch.randn_like(batch, device='cuda') * self.sigma
-                predictions = self.base_classifier(batch + noise).argmax(1)
-                class_counts += self._count_arr(predictions.cpu().numpy(), self.num_classes)
-        
+                
+                noise = torch.randn_like(batch) * self.sigma
+                
+                predictions = self.base_classifier((inputs + noise).clamp(0, 1)).argmax(1)
+                
+                for idx in predictions.numpy():
+                    class_counts[idx] += 1
+                
                 ##########################################################
         return class_counts
 
