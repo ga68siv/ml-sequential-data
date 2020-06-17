@@ -166,15 +166,19 @@ def evaluate_robustness_smoothing(base_classifier: nn.Module, sigma: float, data
     for x, y in tqdm(iter(test_loader), total=len(dataset)):
         ##########################################################
         # YOUR CODE HERE
-
-        prediction, radius = model.certify(x, num_samples_1, num_samples_2, alpha, certification_batch_size)
-        #prediction = model.predict(x,num_samples_1,alpha,certification_batch_size  )      
-        print(prediction)
-        print(y)
+        x = x.to(model.device())
+        pred_class, radius = model.certify(x, num_samples_1, num_samples_2, alpha=alpha,
+                                           batch_size=certification_batch_size)
+        if pred_class == y:
+            correct_certified += 1
+            radii.append(radius)
+        elif pred_class == SmoothClassifier.ABSTAIN:
+            abstains += 1
+            radii.append(0.)
+        elif pred_class != y:
+            false_predictions += 1
+            radii.append(0.)
         
-        #false_predictions = int(prediction != y)
-        #correct_certified = int(prediction == y)
-        #radii.append(radius)
         ##########################################################
     avg_radius = torch.tensor(radii).mean().item()
     return dict(abstains=abstains, false_predictions=false_predictions, correct_certified=correct_certified,
